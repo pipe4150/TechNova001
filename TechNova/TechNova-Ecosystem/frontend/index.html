@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechNova Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-glow { transition: all 0.3s ease; }
+        .card-glow:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <nav class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900 sticky top-0 z-50">
+        <div>
+            <h1 class="text-2xl font-bold text-blue-400">TechNova Dashboard</h1>
+            <p class="text-xs text-gray-400" id="url-display">Detectando Gateway...</p>
+        </div>
+        <div id="status-badge" class="px-3 py-1 rounded-full text-xs bg-yellow-500 text-black font-bold">
+            Verificando...
+        </div>
+    </nav>
+
+    <main class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 card-glow">
+            <h2 class="text-xl font-semibold text-blue-300 mb-4 flex justify-between">
+                📦 Productos <span class="text-[10px] bg-blue-900 px-2 py-1 rounded">8001</span>
+            </h2>
+            <div id="products-list" class="space-y-2">
+                <p class="text-gray-500 text-sm italic">Cargando...</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 card-glow">
+            <h2 class="text-xl font-semibold text-purple-300 mb-4 flex justify-between">
+                👥 Usuarios <span class="text-[10px] bg-purple-900 px-2 py-1 rounded">8003</span>
+            </h2>
+            <div id="users-list" class="space-y-2">
+                <p class="text-gray-500 text-sm italic">Cargando...</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 card-glow">
+            <h2 class="text-xl font-semibold text-green-300 mb-4 flex justify-between">
+                🛒 Órdenes <span class="text-[10px] bg-green-900 px-2 py-1 rounded">8002</span>
+            </h2>
+            <div id="orders-list" class="space-y-2">
+                <p class="text-gray-500 text-sm italic">Cargando...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Lógica de detección de URL para Codespaces
+        const currentUrl = window.location.href;
+        const GATEWAY_URL = currentUrl.replace("-3000", "-8000").split(/[?#]/)[0].replace(/\/$/, "");
+        
+        document.getElementById('url-display').innerText = `Gateway: ${GATEWAY_URL}`;
+
+        async function loadService(serviceName, elementId) {
+            const container = document.getElementById(elementId);
+            const statusBadge = document.getElementById("status-badge");
+
+            try {
+                // El Gateway espera /service/path, usamos /service/ para el listado
+                const response = await fetch(`${GATEWAY_URL}/${serviceName}/`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error(`Error ${response.status}`);
+                
+                const data = await response.json();
+                container.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = "<p class='text-gray-600 text-xs italic'>No hay registros.</p>";
+                } else {
+                    data.slice(0, 5).forEach(item => {
+                        const div = document.createElement("div");
+                        div.className = "p-3 bg-gray-700/50 rounded-lg text-sm border border-gray-600";
+                        const name = item.name || item.username || `ID: ${item._id?.substring(0,6) || 'N/A'}`;
+                        div.innerHTML = `<span class="font-medium">${name}</span>`;
+                        container.appendChild(div);
+                    });
+                }
+                statusBadge.className = "px-3 py-1 rounded-full text-xs bg-green-500 text-white font-bold";
+                statusBadge.innerText = "Sistemas Online";
+            } catch (err) {
+                console.error(`Fallo en ${serviceName}:`, err);
+                container.innerHTML = `<p class="text-red-400 text-[10px]">Error de conexión</p>`;
+                statusBadge.className = "px-3 py-1 rounded-full text-xs bg-red-600 text-white font-bold";
+                statusBadge.innerText = "Error de Enlace";
+            }
+        }
+
+        // Ejecutar al cargar la página
+        window.addEventListener('load', () => {
+            loadService('products', 'products-list');
+            loadService('users', 'users-list');
+            loadService('orders', 'orders-list');
+        });
+    </script>
+</body>
+</html>
